@@ -23,31 +23,20 @@ request = requests.get(f'https://data.police.uk/api/{force}/neighbourhoods')
 neighbourhoods = [list(id_name.values()) for id_name in request.json()]
 polygons = []
 
-for neigh in neighbourhoods:
-
+for i,neigh in enumerate(neighbourhoods):
+    print(i)
     id_ = neigh[0]
+    
+    #check_quota_limit()
     requestBoundary = requests.get(f'https://data.police.uk/api/{force}/{id_}/boundary').json()
     
     requestBoundary = [(float(i['latitude']), float(i['longitude'])) for i in requestBoundary]
     
     polygons.append( Polygon(requestBoundary) )
 
-
-
-
-
-NTAs = ntaPolyData.columns.tolist()
-polygons = []
-
-for i in NTAs:
-    lonlat = ntaPolyData[i].dropna().tolist()
-    polygons.append( Polygon(list(pairwise( lonlat ))) )
-
 polygons = gpd.GeoSeries(polygons)
-
-geoDf = gpd.GeoDataFrame({'nta_code':NTAs, 'geometry':polygons})
-
-geoDf = geoDf.merge(ntaData, on = 'nta_code')
+geoDf = gpd.GeoDataFrame({'name':[n[1] for n in neighbourhoods], 'geometry':polygons})
 
 fig, ax = plt.subplots(1, 1)
-geoDf.plot(column = 'under_5_years', ax = ax, legend = True)
+geoDf.plot(column = 'name', ax = ax, legend = True)
+
