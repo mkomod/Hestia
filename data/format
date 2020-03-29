@@ -3,16 +3,16 @@
 rm pols.svg
 rm svgs nh
 
-IM_W=600
-IM_H=600
+IM_W=700
+IM_H=900
 
 sed "s/latitude//g; s/longitude//g; s/\(\.[0-9]\{5\}\)[0-9]*/\1/g; s/},{/,/g"  pols.json |
     tr -d "\":{}[]" |
     awk '
     BEGIN {
 	FS=","
-	IM_W = 500
-	IM_H = 600
+	IM_W = 700
+	IM_H = 900
 	MAX_X=51.69187
 	MIN_X=51.28675
 	MAX_Y=0.33404
