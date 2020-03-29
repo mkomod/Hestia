@@ -1,9 +1,7 @@
 import requests
 import time
 from collections import deque
-
-import geopandas as gpd
-from shapely.geometry import Point, Polygon
+import json
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,48 +16,56 @@ def check_quota_limit():
     log.append(time.time())
 
 force = 'metropolitan'
-request = requests.get(f'https://data.police.uk/api/{force}/neighbourhoods')
+
+polLines = open('data/pols.json').read().splitlines()
 
 
-neighbourhoods = [list(id_name.values()) for id_name in request.json()]
-lonLat = []
-polygons = []
-
-for i,neigh in enumerate(neighbourhoods):
-    print(i)
-    id_ = neigh[0]
+def makeBoundary(polLine):
+    boundary = ''
     
-    #check_quota_limit()
-    requestBoundary = requests.get(f'https://data.police.uk/api/{force}/{id_}/boundary').json()
-    requestBoundary = [(float(i['latitude']), float(i['longitude'])) for i in requestBoundary]
+    points = polLine.split('}')[:-1]
     
-    lonLat.append(requestBoundary)
-    polygons.append( Polygon(requestBoundary) )
-
-polygons = gpd.GeoSeries(polygons)
-geoDf = gpd.GeoDataFrame({'name':[n[1] for n in neighbourhoods], 'geometry':polygons})
-
-nCrimes = []
-date = '2018-01'
-
-for i, lonsLats in enumerate(lonLat):
-    print(i)
-    boundaryForAPI = ''
-    for lat, lon in lonsLats:
-        boundaryForAPI += str(lat) +','+str(lon) +':'
-    boundaryForAPI = boundaryForAPI[:-1]
+    for point_ in points:
+        lat, lon = [i.split(':')[-1][1:-1] for i in point_.split(',')[-2:]]
+        boundary += lat + ',' + lon + ':'
+        
+    boundary = boundary[:-1]
     
-    rek = requests.post('https://data.police.uk/api/crimes-street/all-crime?', data = {'poly':boundaryForAPI, 'date':date})
+    return boundary
+
+dates = ['20'+yy+'-'+mm for yy in ['17','18','19','20'] for mm in ['01','02','03','04','05','06','07','08','09','10','11','12']][2:-10]
+
+def summaryStats(crimes):
+    return len(crimes)
+
+def getCrimeData(date, boundary):
+    check_quota_limit()
+    rek = requests.post('https://data.police.uk/api/crimes-street/all-crime?', data = {'poly':boundary, 'date':date})
     if rek.ok:
         crimes = rek.json()
-        nCrimes.append(len(crimes))
-        
+        return summaryStats(crimes)
     else:
-        nCrimes.append(np.nan)
-        
+        return rek.reason
+    
+getCrimeData = np.vectorize(getCrimeData)
 
-geoDf[date] = nCrimes
+crimeData = np.zeros((len(polLines), len(dates)))
 
-fig, ax = plt.subplots(1, 1)
-geoDf.plot(column = date, ax = ax, legend = True)
+for i, polLine_ in enumerate(polLines):
+    print(i/len(polLines)*100)
+    crimeData[i] = getCrimeData( dates, makeBoundary(polLine_) )
+
+np.savetxt('crimeData.csv', crimeData, delimiter=',', fmt='%d')
+
+
+
+
+
+
+
+
+
+
+
+
 
