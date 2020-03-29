@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+FORCE="metropolitan"
+
+rm nh.json ids.txt pols.json
+
+curl https://data.police.uk/api/$FORCE/neighbourhoods >> nh.json
+
+grep -oP "\"id\":\"\K[^\"]+" nh.json >> ids.txt
+
+while read ID; do
+   curl https://data.police.uk/api/$FORCE/$ID/boundary >> pols.json
+   echo "" >> pols.json 
+done < ids.txt
+
