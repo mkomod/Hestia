@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
 rm pols.svg
+rm svgs nh
 
 IM_W=600
 IM_H=600
@@ -10,7 +11,7 @@ sed "s/latitude//g; s/longitude//g; s/\(\.[0-9]\{5\}\)[0-9]*/\1/g; s/},{/,/g"  p
     awk '
     BEGIN {
 	FS=","
-	IM_W = 600
+	IM_W = 500
 	IM_H = 600
 	MAX_X=51.69187
 	MIN_X=51.28675
@@ -19,12 +20,11 @@ sed "s/latitude//g; s/longitude//g; s/\(\.[0-9]\{5\}\)[0-9]*/\1/g; s/},{/,/g"  p
     } 
     { 
 	$1 = ( IM_W * ( ($1 - MIN_X ) / ( MAX_X - MIN_X )) )
-	$2 = ( IM_H * ( ($2 - MIN_Y ) / ( MAX_Y - MIN_Y )) )
 
-	for (i = 2; i <= (NF - 1); i+=2 ) {
+	for (i = 2; i <= NF; i+=2 ) {
 	    $i = ( IM_H * ( ($i - MIN_Y ) / ( MAX_Y - MIN_Y )) )
 	}
-	for (i = 3; i <= (NF - 1); i+=2 ) {
+	for (i = 3; i <= NF; i+=2 ) {
 	    $i = ( IM_W * ( ($i - MIN_X ) / ( MAX_X - MIN_X )) )
 	    sub(/^/, "L", $i)
 	}
@@ -46,3 +46,4 @@ paste nh svgs | sed 's/^/<path /g; s/$/ \/>/g' >> pols.svg
 printf  "</g>\n</svg>\n" >> pols.svg
 
 rm svgs nh
+
